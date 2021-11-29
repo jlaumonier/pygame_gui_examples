@@ -19,7 +19,6 @@ from pygame_gui.elements import UISelectionList
 
 from pygame_gui.windows import UIMessageWindow
 
-
 import pygame
 
 
@@ -132,8 +131,9 @@ class EverythingWindow(UIWindow):
 
 class Options:
     def __init__(self):
-        self.resolution = (800, 600)
+        self.resolution = (640, 480)
         self.fullscreen = False
+        self.real_resolution = (2560, 1440)
 
 
 class OptionsUIApp:
@@ -142,16 +142,22 @@ class OptionsUIApp:
         pygame.display.set_caption("Options UI")
         self.options = Options()
         if self.options.fullscreen:
-            self.window_surface = pygame.display.set_mode(self.options.resolution,
-                                                          pygame.FULLSCREEN)
+            self.screen = pygame.display.set_mode(self.options.real_resolution,
+                                                  pygame.FULLSCREEN)
         else:
-            self.window_surface = pygame.display.set_mode(self.options.resolution)
+            self.screen = pygame.display.set_mode(self.options.real_resolution)
+        self.window_surface = pygame.Surface(self.options.resolution)
 
         self.background_surface = None
 
         self.ui_manager = UIManager(self.options.resolution,
                                     PackageResource(package='data.themes',
                                                     resource='theme_2.json'))
+
+        ratio_x = (self.window_surface.get_width() / self.screen.get_width())
+        ratio_y = (self.window_surface.get_height() / self.screen.get_height())
+        self.ui_manager.mouse_pos_scale_factor = [ratio_x, ratio_y]
+
         self.ui_manager.preload_fonts([{'name': 'fira_code', 'point_size': 10, 'style': 'bold'},
                                        {'name': 'fira_code', 'point_size': 10, 'style': 'regular'},
                                        {'name': 'fira_code', 'point_size': 10, 'style': 'italic'},
@@ -187,7 +193,7 @@ class OptionsUIApp:
         self.all_shown = True
 
     def recreate_ui(self):
-        self.ui_manager.set_window_resolution(self.options.resolution)
+        #self.ui_manager.set_window_resolution(self.options.resolution)
         self.ui_manager.clear_and_reset()
 
         self.background_surface = pygame.Surface(self.options.resolution)
@@ -380,7 +386,8 @@ class OptionsUIApp:
         if (resolution_width != self.options.resolution[0] or
                 resolution_height != self.options.resolution[1]):
             self.options.resolution = (resolution_width, resolution_height)
-            self.window_surface = pygame.display.set_mode(self.options.resolution)
+            # self.window_surface = pygame.display.set_mode(self.options.resolution)
+            self.window_surface = pygame.Surface(self.options.resolution)
             self.recreate_ui()
 
     def process_events(self):
@@ -461,12 +468,13 @@ class OptionsUIApp:
 
             if len(self.time_delta_stack) == 2000:
                 self.fps_counter.set_text(
-                    f'FPS: {min(999.0, 1.0/max(sum(self.time_delta_stack)/2000.0, 0.0000001)):.2f}')
-                self.frame_timer.set_text(f'frame_time: {sum(self.time_delta_stack)/2000.0:.4f}')
+                    f'FPS: {min(999.0, 1.0 / max(sum(self.time_delta_stack) / 2000.0, 0.0000001)):.2f}')
+                self.frame_timer.set_text(f'frame_time: {sum(self.time_delta_stack) / 2000.0:.4f}')
 
             # draw graphics
             self.window_surface.blit(self.background_surface, (0, 0))
             self.ui_manager.draw_ui(self.window_surface)
+            self.screen.blit(pygame.transform.smoothscale(self.window_surface, self.screen.get_rect().size), (0, 0))
 
             pygame.display.update()
 
